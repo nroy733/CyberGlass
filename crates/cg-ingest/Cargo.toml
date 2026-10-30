@@ -1,0 +1,53 @@
+[package]
+name = "cg-ingest"
+description = "CyberGlass ingestion and parsing engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Traits
+async-trait = { workspace = true }
+
+# Time & ID
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Parsing
+regex = { workspace = true }
+
+# WAL integrity
+crc32fast = { workspace = true }
+parking_lot = { workspace = true }
+
+# Concurrency
+dashmap = { workspace = true }
+crossbeam = { workspace = true }
+
+prost = { workspace = true }
+prost-types = { workspace = true }
+cg-core = { path = "../cg-core" }
+cg-proto = { path = "../cg-proto" }
+cg-bus = { path = "../cg-bus" }
+
+# File upload support
+mime = { workspace = true }
+md5 = { workspace = true }
+base64 = { workspace = true }
+

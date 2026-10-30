@@ -1,0 +1,44 @@
+[package]
+name = "cg-index"
+description = "CyberGlass Tantivy full-text + Arrow columnar index"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# Search & Index
+tantivy = { workspace = true }
+
+# Data processing
+arrow = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Traits
+async-trait = { workspace = true }
+
+# Time & ID
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Concurrency
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+crossbeam = { workspace = true }
+
+# Internal crates
+cg-core = { path = "../cg-core" }
+cg-proto = { path = "../cg-proto" }

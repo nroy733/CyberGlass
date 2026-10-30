@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package cyberglass.ingest;
+
+import "common.proto";
+
+// Ingestion service — high-throughput event intake
+service IngestService {
+  // Send a batch of events
+  rpc IngestBatch(IngestBatchRequest) returns (IngestBatchResponse);
+
+  // Bidirectional streaming for continuous ingestion
+  rpc IngestStream(stream cyberglass.common.EventBatch) returns (stream IngestStreamResponse);
+
+  // Health check
+  rpc Health(cyberglass.common.HealthRequest) returns (cyberglass.common.HealthResponse);
+}
+
+message IngestBatchRequest {
+  cyberglass.common.EventBatch batch = 1;
+  bool wait_for_ack = 2;    // Wait for write-ahead log confirmation
+}
+
+message IngestBatchResponse {
+  int64 accepted = 1;
+  int64 rejected = 2;
+  repeated IngestError errors = 3;
+  int64 sequence_number = 4;
+}
+
+message IngestStreamResponse {
+  int64 sequence_number = 1;
+  int64 events_processed = 2;
+  IngestStreamStatus status = 3;
+  repeated IngestError errors = 4;
+}
+
+message IngestError {
+  string event_id = 1;
+  string error_code = 2;
+  string message = 3;
+}
+
+enum IngestStreamStatus {
+  INGEST_STREAM_STATUS_UNSPECIFIED = 0;
+  INGEST_STREAM_STATUS_OK = 1;
+  INGEST_STREAM_STATUS_BACKPRESSURE = 2;   // Slow down!
+  INGEST_STREAM_STATUS_ERROR = 3;
+}

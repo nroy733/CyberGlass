@@ -1,0 +1,206 @@
+syntax = "proto3";
+
+package cyberglass.ontology;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Ontology service — knowledge graph / entity management
+service OntologyService {
+  // Entity operations
+  rpc GetEntity(GetEntityRequest) returns (Entity);
+  rpc SearchEntities(SearchEntitiesRequest) returns (SearchEntitiesResponse);
+  rpc MergeEntity(MergeEntityRequest) returns (Entity);
+
+  // Relationship operations
+  rpc GetRelationships(GetRelationshipsRequest) returns (GetRelationshipsResponse);
+
+  // Graph traversal
+  rpc TraverseGraph(TraverseGraphRequest) returns (stream TraverseGraphResponse);
+
+  // Entity timeline
+  rpc GetEntityTimeline(GetEntityTimelineRequest) returns (GetEntityTimelineResponse);
+
+  // Risk scoring
+  rpc GetEntityRisk(GetEntityRiskRequest) returns (EntityRisk);
+
+  // Health
+  rpc Health(cyberglass.common.HealthRequest) returns (cyberglass.common.HealthResponse);
+}
+
+message Entity {
+  string id = 1;
+  EntityType entity_type = 2;
+  string display_name = 3;
+  map<string, google.protobuf.Value> properties = 4;
+  double confidence = 5;
+  google.protobuf.Timestamp first_seen = 6;
+  google.protobuf.Timestamp last_seen = 7;
+  int64 event_count = 8;
+  repeated string tags = 9;
+  repeated string source_event_ids = 10;
+  EntityRisk risk = 11;
+}
+
+enum EntityType {
+  ENTITY_TYPE_UNKNOWN = 0;
+  ENTITY_TYPE_HOST = 1;
+  ENTITY_TYPE_USER = 2;
+  ENTITY_TYPE_IP_ADDRESS = 3;
+  ENTITY_TYPE_DOMAIN = 4;
+  ENTITY_TYPE_URL = 5;
+  ENTITY_TYPE_FILE_HASH = 6;
+  ENTITY_TYPE_PROCESS = 7;
+  ENTITY_TYPE_EMAIL = 8;
+  ENTITY_TYPE_CERTIFICATE = 9;
+  ENTITY_TYPE_VULNERABILITY = 10;
+  ENTITY_TYPE_THREAT_ACTOR = 11;
+  ENTITY_TYPE_CAMPAIGN = 12;
+  ENTITY_TYPE_MALWARE = 13;
+  ENTITY_TYPE_NETWORK_CONNECTION = 14;
+  ENTITY_TYPE_REGISTRY_KEY = 15;
+  ENTITY_TYPE_SERVICE = 16;
+  ENTITY_TYPE_CONTAINER = 17;
+  ENTITY_TYPE_CLOUD_RESOURCE = 18;
+  ENTITY_TYPE_CUSTOM = 99;
+}
+
+message Relationship {
+  string id = 1;
+  string source_entity_id = 2;
+  string target_entity_id = 3;
+  RelationType relation_type = 4;
+  double weight = 5;
+  double confidence = 6;
+  google.protobuf.Timestamp first_seen = 7;
+  google.protobuf.Timestamp last_seen = 8;
+  int64 occurrence_count = 9;
+  map<string, string> properties = 10;
+  repeated string evidence_event_ids = 11;
+}
+
+enum RelationType {
+  RELATION_TYPE_UNKNOWN = 0;
+  RELATION_TYPE_CONNECTED_TO = 1;
+  RELATION_TYPE_AUTHENTICATED_TO = 2;
+  RELATION_TYPE_ACCESSED = 3;
+  RELATION_TYPE_EXECUTED = 4;
+  RELATION_TYPE_SPAWNED = 5;
+  RELATION_TYPE_MODIFIED = 6;
+  RELATION_TYPE_CREATED = 7;
+  RELATION_TYPE_DELETED = 8;
+  RELATION_TYPE_COMMUNICATED_WITH = 9;
+  RELATION_TYPE_RESOLVED_TO = 10;
+  RELATION_TYPE_CONTAINS = 11;
+  RELATION_TYPE_MEMBER_OF = 12;
+  RELATION_TYPE_LOADED = 13;
+  RELATION_TYPE_DOWNLOADED = 14;
+  RELATION_TYPE_UPLOADED = 15;
+  RELATION_TYPE_LATERAL_MOVEMENT = 16;
+  RELATION_TYPE_ESCALATED_TO = 17;
+  RELATION_TYPE_CUSTOM = 99;
+}
+
+message EntityRisk {
+  double score = 1;                // 0.0 - 100.0
+  RiskLevel level = 2;
+  repeated RiskContributor contributors = 3;
+  google.protobuf.Timestamp calculated_at = 4;
+}
+
+enum RiskLevel {
+  RISK_LEVEL_NONE = 0;
+  RISK_LEVEL_LOW = 1;
+  RISK_LEVEL_MEDIUM = 2;
+  RISK_LEVEL_HIGH = 3;
+  RISK_LEVEL_CRITICAL = 4;
+}
+
+message RiskContributor {
+  string source = 1;          // e.g., "rule:brute_force_detected"
+  double score = 2;
+  string description = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+message GetEntityRequest {
+  string id = 1;
+  bool include_relationships = 2;
+  bool include_risk = 3;
+}
+
+message SearchEntitiesRequest {
+  string query = 1;
+  repeated EntityType entity_types = 2;
+  cyberglass.common.TimeRange time_range = 3;
+  cyberglass.common.PaginationRequest pagination = 4;
+  double min_risk_score = 5;
+}
+
+message SearchEntitiesResponse {
+  repeated Entity entities = 1;
+  cyberglass.common.PaginationResponse pagination = 2;
+}
+
+message MergeEntityRequest {
+  Entity entity = 1;   // Will merge with existing entity if matching keys found
+}
+
+message GetRelationshipsRequest {
+  string entity_id = 1;
+  repeated RelationType relation_types = 2;
+  Direction direction = 3;
+  cyberglass.common.TimeRange time_range = 4;
+  int32 max_results = 5;
+}
+
+enum Direction {
+  DIRECTION_BOTH = 0;
+  DIRECTION_OUTBOUND = 1;
+  DIRECTION_INBOUND = 2;
+}
+
+message GetRelationshipsResponse {
+  repeated Relationship relationships = 1;
+}
+
+message TraverseGraphRequest {
+  string start_entity_id = 1;
+  repeated RelationType relation_types = 2;
+  int32 max_depth = 3;
+  int32 max_nodes = 4;
+  cyberglass.common.TimeRange time_range = 5;
+  string filter_query = 6;    // CyberQL filter on entities during traversal
+}
+
+message TraverseGraphResponse {
+  oneof node {
+    Entity entity = 1;
+    Relationship relationship = 2;
+  }
+  int32 depth = 3;
+}
+
+message GetEntityTimelineRequest {
+  string entity_id = 1;
+  cyberglass.common.TimeRange time_range = 2;
+  int32 max_events = 3;
+}
+
+message GetEntityTimelineResponse {
+  repeated TimelineEntry entries = 1;
+}
+
+message TimelineEntry {
+  google.protobuf.Timestamp timestamp = 1;
+  string event_type = 2;
+  string description = 3;
+  string event_id = 4;
+  map<string, string> fields = 5;
+}
+
+message GetEntityRiskRequest {
+  string entity_id = 1;
+  bool include_history = 2;
+}

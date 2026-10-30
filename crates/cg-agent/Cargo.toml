@@ -1,0 +1,51 @@
+[package]
+name = "cg-agent"
+description = "CyberGlass Scripted Input Agent — modifiable, deployable data onboarding agent"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "cg-agent"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# HTTP client for sending to CyberGlass
+reqwest = { workspace = true, features = ["json"] }
+
+# CLI
+clap = { workspace = true, features = ["derive"] }
+
+# Configuration
+toml = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true, features = ["v4", "v7", "serde"] }
+
+# Concurrency
+dashmap = { workspace = true }
+
+# Cross-platform file watching
+notify = "6"
+
+# Misc
+bytes = { workspace = true }

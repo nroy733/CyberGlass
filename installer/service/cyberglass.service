@@ -1,0 +1,26 @@
+[Unit]
+Description=CyberGlass SIEM & Data Fusion Platform
+Documentation=https://github.com/cyberglass/cyberglass
+After=network.target local-fs.target
+
+[Service]
+Type=simple
+User=cyberglass
+Group=cyberglass
+WorkingDirectory=/opt/cyberglass
+Environment=CYBERGLASS_HOME=/opt/cyberglass
+Environment=CYBERGLASS_CONFIG=/opt/cyberglass/config/cyberglass.toml
+ExecStart=/opt/cyberglass/bin/cyberglass-server --home /opt/cyberglass
+Restart=always
+RestartSec=5s
+
+# Hardening & Security Isolation
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+LimitNOFILE=65536
+LimitNPROC=65536
+
+[Install]
+WantedBy=multi-user.target

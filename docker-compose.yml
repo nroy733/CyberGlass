@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  cyberglass:
+    image: cyberglass:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberglass-siem
+    restart: unless-stopped
+    ports:
+      - "9400:9400"  # gRPC Ingestion & RPC
+      - "9401:9401"  # REST & Search Gateway (CyberQL)
+      - "9402:9402"  # CGAP Agent Protocol
+      - "9403:9403"  # Embedded NATS Event Bus
+    volumes:
+      - ./data:/opt/cyberglass/data
+      - ./index:/opt/cyberglass/index
+      - ./wal:/opt/cyberglass/wal
+      - ./ontology:/opt/cyberglass/ontology
+      - ./models:/opt/cyberglass/models
+      - ./config:/opt/cyberglass/config
+      - ./rules:/opt/cyberglass/rules
+      - ./logs:/opt/cyberglass/logs
+    environment:
+      - CYBERGLASS_HOME=/opt/cyberglass
+      - CYBERGLASS_CONFIG=/opt/cyberglass/config/cyberglass.toml
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9401/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

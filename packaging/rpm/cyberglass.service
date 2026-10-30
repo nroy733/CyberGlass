@@ -1,0 +1,23 @@
+[Unit]
+Description=CyberGlass SIEM and Data Fusion Platform
+After=network.target
+
+[Service]
+Type=simple
+User=cyberglass
+Group=cyberglass
+StateDirectory=cyberglass
+WorkingDirectory=/var/lib/cyberglass
+Environment=CYBERGLASS_CONFIG=/etc/cyberglass/cyberglass.toml
+ExecStart=/opt/cyberglass/bin/cyberglass-server
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=65536
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/cyberglass
+
+[Install]
+WantedBy=multi-user.target

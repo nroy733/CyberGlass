@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package cyberglass.common;
+
+import "google/protobuf/timestamp.proto";
+
+// Universal event envelope — every piece of data flowing through CyberGlass
+message Event {
+  string id = 1;                               // UUID v7 (time-ordered)
+  google.protobuf.Timestamp timestamp = 2;     // Event time
+  google.protobuf.Timestamp ingest_time = 3;   // Ingestion time
+  string source = 4;                           // Source identifier
+  string source_type = 5;                      // Source type (syslog, json, cef, etc.)
+  string index = 6;                            // Target index
+  bytes raw = 7;                               // Raw event bytes
+  map<string, string> fields = 8;              // Extracted key-value fields
+  map<string, string> metadata = 9;            // System metadata
+  Severity severity = 10;
+  string tenant_id = 11;                       // Multi-tenancy support
+  string collector_id = 12;                    // Which collector sent this
+}
+
+// Batch of events for efficient transport
+message EventBatch {
+  repeated Event events = 1;
+  string collector_id = 2;
+  int64 sequence_number = 3;
+  CompressionType compression = 4;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_DEBUG = 1;
+  SEVERITY_INFO = 2;
+  SEVERITY_NOTICE = 3;
+  SEVERITY_WARNING = 4;
+  SEVERITY_ERROR = 5;
+  SEVERITY_CRITICAL = 6;
+  SEVERITY_ALERT = 7;
+  SEVERITY_EMERGENCY = 8;
+}
+
+enum CompressionType {
+  COMPRESSION_NONE = 0;
+  COMPRESSION_ZSTD = 1;
+  COMPRESSION_LZ4 = 2;
+  COMPRESSION_SNAPPY = 3;
+}
+
+// Health check types
+message HealthRequest {}
+
+message HealthResponse {
+  ServiceStatus status = 1;
+  string version = 2;
+  string node_id = 3;
+  int64 uptime_seconds = 4;
+  map<string, ComponentHealth> components = 5;
+}
+
+enum ServiceStatus {
+  SERVICE_STATUS_UNSPECIFIED = 0;
+  SERVICE_STATUS_HEALTHY = 1;
+  SERVICE_STATUS_DEGRADED = 2;
+  SERVICE_STATUS_UNHEALTHY = 3;
+}
+
+message ComponentHealth {
+  ServiceStatus status = 1;
+  string message = 2;
+  google.protobuf.Timestamp last_check = 3;
+}
+
+// Pagination
+message PaginationRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message PaginationResponse {
+  string next_page_token = 1;
+  int64 total_count = 2;
+}
+
+// Time range
+message TimeRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}

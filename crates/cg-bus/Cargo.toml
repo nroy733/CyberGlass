@@ -1,0 +1,23 @@
+[package]
+name = "cg-bus"
+description = "Event bus abstraction over embedded NATS for CyberGlass SIEM"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cg-core = { path = "../cg-core" }
+cg-proto = { path = "../cg-proto" }
+tokio = { workspace = true }
+async-nats = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+prost = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio-stream = { workspace = true }

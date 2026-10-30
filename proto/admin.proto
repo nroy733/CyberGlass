@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package cyberglass.admin;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Admin service — cluster management, configuration
+service AdminService {
+  // Cluster
+  rpc GetClusterStatus(cyberglass.common.HealthRequest) returns (ClusterStatus);
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
+
+  // Configuration
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
+
+  // Indexes
+  rpc CreateIndex(CreateIndexRequest) returns (IndexInfo);
+  rpc ListIndexes(ListIndexesRequest) returns (ListIndexesResponse);
+  rpc DeleteIndex(DeleteIndexRequest) returns (DeleteIndexResponse);
+
+  // Metrics
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+
+  // Health
+  rpc Health(cyberglass.common.HealthRequest) returns (cyberglass.common.HealthResponse);
+}
+
+message ClusterStatus {
+  string cluster_id = 1;
+  string cluster_name = 2;
+  int32 total_nodes = 3;
+  int32 healthy_nodes = 4;
+  cyberglass.common.ServiceStatus status = 5;
+  ClusterMetrics metrics = 6;
+}
+
+message ClusterMetrics {
+  int64 total_events = 1;
+  double events_per_second = 2;
+  int64 total_storage_bytes = 3;
+  int64 used_storage_bytes = 4;
+  double cpu_usage_percent = 5;
+  double memory_usage_percent = 6;
+  int64 active_queries = 7;
+  int64 total_alerts_today = 8;
+}
+
+message NodeInfo {
+  string node_id = 1;
+  string hostname = 2;
+  string address = 3;
+  NodeRole role = 4;
+  cyberglass.common.ServiceStatus status = 5;
+  google.protobuf.Timestamp started_at = 6;
+  NodeMetrics metrics = 7;
+}
+
+enum NodeRole {
+  NODE_ROLE_ALL = 0;        // Single-node mode
+  NODE_ROLE_INGEST = 1;
+  NODE_ROLE_SEARCH = 2;
+  NODE_ROLE_COORDINATOR = 3;
+  NODE_ROLE_AI = 4;
+}
+
+message NodeMetrics {
+  double cpu_usage = 1;
+  int64 memory_used_bytes = 2;
+  int64 memory_total_bytes = 3;
+  double events_per_second = 4;
+  int64 disk_used_bytes = 5;
+  int64 disk_total_bytes = 6;
+}
+
+message ListNodesRequest {}
+message ListNodesResponse {
+  repeated NodeInfo nodes = 1;
+}
+
+message GetConfigRequest {
+  string section = 1;   // Empty = all
+}
+message GetConfigResponse {
+  string config_toml = 1;
+}
+
+message UpdateConfigRequest {
+  string section = 1;
+  string config_toml = 2;
+  bool apply_immediately = 3;
+}
+message UpdateConfigResponse {
+  bool applied = 1;
+  bool requires_restart = 2;
+  repeated string warnings = 3;
+}
+
+message IndexInfo {
+  string name = 1;
+  int64 event_count = 2;
+  int64 size_bytes = 3;
+  google.protobuf.Timestamp earliest_event = 4;
+  google.protobuf.Timestamp latest_event = 5;
+  int32 retention_days = 6;
+  string storage_tier = 7;
+}
+
+message CreateIndexRequest {
+  string name = 1;
+  int32 retention_days = 2;
+  map<string, string> settings = 3;
+}
+message ListIndexesRequest {}
+message ListIndexesResponse {
+  repeated IndexInfo indexes = 1;
+}
+message DeleteIndexRequest { string name = 1; }
+message DeleteIndexResponse { bool deleted = 1; }
+
+message GetMetricsRequest {
+  string metric_name = 1;    // Empty = all
+  cyberglass.common.TimeRange time_range = 2;
+  int32 resolution_seconds = 3;
+}
+message GetMetricsResponse {
+  repeated MetricSeries series = 1;
+}
+message MetricSeries {
+  string name = 1;
+  map<string, string> labels = 2;
+  repeated MetricPoint points = 3;
+}
+message MetricPoint {
+  google.protobuf.Timestamp timestamp = 1;
+  double value = 2;
+}

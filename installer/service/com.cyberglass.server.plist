@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cyberglass.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/cyberglass/bin/cyberglass-server</string>
+        <string>--home</string>
+        <string>/opt/cyberglass</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>CYBERGLASS_HOME</key>
+        <string>/opt/cyberglass</string>
+        <key>CYBERGLASS_CONFIG</key>
+        <string>/opt/cyberglass/config/cyberglass.toml</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/opt/cyberglass/logs/stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/opt/cyberglass/logs/stderr.log</string>
+</dict>
+</plist>

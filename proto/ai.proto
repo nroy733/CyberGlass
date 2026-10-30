@@ -1,0 +1,300 @@
+syntax = "proto3";
+
+package cyberglass.ai;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// AI Engine service — local & federated model inference
+service AIService {
+  // Chat / completion
+  rpc Chat(ChatRequest) returns (stream ChatResponse);
+
+  // Natural language to CyberQL query
+  rpc GenerateQuery(GenerateQueryRequest) returns (GenerateQueryResponse);
+
+  // Alert triage assistance
+  rpc TriageAlert(TriageAlertRequest) returns (TriageAlertResponse);
+
+  // Incident summarization
+  rpc SummarizeIncident(SummarizeIncidentRequest) returns (SummarizeIncidentResponse);
+
+  // Threat hunt suggestions
+  rpc SuggestHunts(SuggestHuntsRequest) returns (SuggestHuntsResponse);
+
+  // List available models
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+
+  // Health
+  rpc Health(cyberglass.common.HealthRequest) returns (cyberglass.common.HealthResponse);
+}
+
+// CGAP — CyberGlass Agent Protocol (MCP-like but security-native)
+service CGAPService {
+  // Register a tool provider
+  rpc RegisterToolProvider(RegisterToolProviderRequest) returns (RegisterToolProviderResponse);
+
+  // List available tools
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+  // Execute a tool
+  rpc ExecuteTool(ExecuteToolRequest) returns (stream ExecuteToolResponse);
+
+  // Bidirectional agent communication
+  rpc AgentChannel(stream AgentMessage) returns (stream AgentMessage);
+}
+
+// ---- AI Service Messages ----
+
+message ChatRequest {
+  repeated ChatMessage messages = 1;
+  string model = 2;             // Model identifier (empty = default)
+  double temperature = 3;
+  int32 max_tokens = 4;
+  repeated string tools = 5;    // CGAP tool names to make available
+  ChatContext context = 6;       // Security context injected into prompt
+}
+
+message ChatMessage {
+  ChatRole role = 1;
+  string content = 2;
+  string tool_call_id = 3;
+  repeated ToolCall tool_calls = 4;
+}
+
+enum ChatRole {
+  CHAT_ROLE_SYSTEM = 0;
+  CHAT_ROLE_USER = 1;
+  CHAT_ROLE_ASSISTANT = 2;
+  CHAT_ROLE_TOOL = 3;
+}
+
+message ChatResponse {
+  oneof response {
+    string text_delta = 1;       // Streaming text chunk
+    ToolCall tool_call = 2;      // Model wants to call a tool
+    ChatUsage usage = 3;         // Final usage stats
+  }
+}
+
+message ToolCall {
+  string id = 1;
+  string tool_name = 2;
+  string arguments_json = 3;
+}
+
+message ChatUsage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  string model_used = 3;
+  int64 latency_ms = 4;
+}
+
+message ChatContext {
+  // Auto-injected security context for the AI
+  repeated string selected_entity_ids = 1;
+  repeated string selected_alert_ids = 2;
+  string current_query = 3;
+  string current_view = 4;       // e.g., "investigation_canvas", "hunt_workbench"
+  cyberglass.common.TimeRange time_range = 5;
+}
+
+message GenerateQueryRequest {
+  string natural_language = 1;
+  string target_dialect = 2;    // cyberql, sql, spl
+  repeated string available_indexes = 3;
+  repeated string available_fields = 4;   // Field name hints
+}
+
+message GenerateQueryResponse {
+  string query = 1;
+  double confidence = 2;
+  string explanation = 3;
+  repeated string alternatives = 4;
+}
+
+message TriageAlertRequest {
+  string alert_id = 1;
+  bool include_entity_context = 2;
+  bool include_similar_alerts = 3;
+}
+
+message TriageAlertResponse {
+  string summary = 1;
+  string recommended_action = 2;
+  double confidence = 3;
+  bool likely_false_positive = 4;
+  string reasoning = 5;
+  repeated string suggested_queries = 6;   // Follow-up investigation queries
+  repeated string related_mitre_techniques = 7;
+}
+
+message SummarizeIncidentRequest {
+  string incident_id = 1;
+  repeated string alert_ids = 2;
+  SummaryFormat format = 3;
+}
+
+enum SummaryFormat {
+  SUMMARY_FORMAT_BRIEF = 0;
+  SUMMARY_FORMAT_DETAILED = 1;
+  SUMMARY_FORMAT_EXECUTIVE = 2;
+  SUMMARY_FORMAT_TECHNICAL = 3;
+}
+
+message SummarizeIncidentResponse {
+  string summary = 1;
+  string timeline_narrative = 2;
+  repeated string affected_entities = 3;
+  string recommended_actions = 4;
+  repeated string iocs = 5;   // Indicators of compromise
+}
+
+message SuggestHuntsRequest {
+  repeated string recent_alert_types = 1;
+  repeated string coverage_gaps = 2;   // MITRE ATT&CK gaps
+}
+
+message SuggestHuntsResponse {
+  repeated HuntSuggestion suggestions = 1;
+}
+
+message HuntSuggestion {
+  string title = 1;
+  string description = 2;
+  string query = 3;
+  string mitre_technique = 4;
+  double priority = 5;
+  string rationale = 6;
+}
+
+message ListModelsRequest {}
+
+message ListModelsResponse {
+  repeated ModelInfo models = 1;
+}
+
+message ModelInfo {
+  string id = 1;
+  string name = 2;
+  ModelType model_type = 3;
+  ModelLocation location = 4;
+  int64 parameters = 5;
+  string quantization = 6;
+  bool available = 7;
+}
+
+enum ModelType {
+  MODEL_TYPE_GENERAL = 0;
+  MODEL_TYPE_CODE = 1;
+  MODEL_TYPE_SECURITY = 2;
+  MODEL_TYPE_EMBEDDING = 3;
+  MODEL_TYPE_ANOMALY = 4;
+}
+
+enum ModelLocation {
+  MODEL_LOCATION_LOCAL = 0;
+  MODEL_LOCATION_REMOTE = 1;
+}
+
+// ---- CGAP Messages ----
+
+message RegisterToolProviderRequest {
+  string provider_id = 1;
+  string name = 2;
+  string version = 3;
+  repeated CGAPTool tools = 4;
+  ProviderCapabilities capabilities = 5;
+}
+
+message RegisterToolProviderResponse {
+  bool accepted = 1;
+  string session_id = 2;
+}
+
+message CGAPTool {
+  string name = 1;
+  string description = 2;
+  string version = 3;
+  google.protobuf.Struct input_schema = 4;     // JSON Schema
+  google.protobuf.Struct output_schema = 5;
+  ToolSecurity security = 6;
+}
+
+message ToolSecurity {
+  repeated string required_permissions = 1;
+  SecurityLevel min_clearance = 2;
+  bool requires_approval = 3;
+  bool sandboxed = 4;                  // Runs in WASM sandbox
+  bool audit_logged = 5;
+}
+
+enum SecurityLevel {
+  SECURITY_LEVEL_PUBLIC = 0;
+  SECURITY_LEVEL_INTERNAL = 1;
+  SECURITY_LEVEL_CONFIDENTIAL = 2;
+  SECURITY_LEVEL_SECRET = 3;
+  SECURITY_LEVEL_TOP_SECRET = 4;
+}
+
+message ProviderCapabilities {
+  bool supports_streaming = 1;
+  bool supports_batch = 2;
+  bool supports_cancellation = 3;
+  int32 max_concurrent = 4;
+}
+
+message ListToolsRequest {
+  string provider_id = 1;   // Empty = all providers
+}
+
+message ListToolsResponse {
+  repeated CGAPTool tools = 1;
+}
+
+message ExecuteToolRequest {
+  string tool_name = 1;
+  string arguments_json = 2;
+  string request_id = 3;
+  SecurityContext security_context = 4;
+}
+
+message ExecuteToolResponse {
+  oneof response {
+    string output_json = 1;
+    string progress = 2;
+    ToolError error = 3;
+  }
+  string request_id = 4;
+}
+
+message ToolError {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+}
+
+message SecurityContext {
+  string user_id = 1;
+  repeated string roles = 2;
+  SecurityLevel clearance = 3;
+  string session_id = 4;
+}
+
+message AgentMessage {
+  string message_id = 1;
+  string sender = 2;
+  AgentMessageType message_type = 3;
+  string content = 4;
+  google.protobuf.Struct metadata = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+enum AgentMessageType {
+  AGENT_MESSAGE_TEXT = 0;
+  AGENT_MESSAGE_TOOL_CALL = 1;
+  AGENT_MESSAGE_TOOL_RESULT = 2;
+  AGENT_MESSAGE_ERROR = 3;
+  AGENT_MESSAGE_STATUS = 4;
+}

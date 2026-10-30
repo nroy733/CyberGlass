@@ -1,0 +1,24 @@
+[package]
+name = "cg-storage"
+description = "Tiered storage management for CyberGlass SIEM"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cg-core = { path = "../cg-core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+parquet = { workspace = true }
+arrow = { workspace = true }
+zstd = { workspace = true }
+lz4_flex = { workspace = true }
+bytes = { workspace = true }
+dashmap = { workspace = true }

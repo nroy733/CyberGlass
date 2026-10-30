@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package cyberglass.query;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Query service — unified search and analytics
+service QueryService {
+  // Execute a query and get results
+  rpc Query(QueryRequest) returns (QueryResponse);
+
+  // Execute a streaming query (results arrive as they're found)
+  rpc QueryStream(QueryRequest) returns (stream QueryStreamResponse);
+
+  // Explain a query plan without executing
+  rpc ExplainQuery(QueryRequest) returns (QueryPlan);
+
+  // Parse a query and check for errors
+  rpc ParseQuery(ParseQueryRequest) returns (ParseQueryResponse);
+
+  // Cancel a running query
+  rpc CancelQuery(CancelQueryRequest) returns (CancelQueryResponse);
+
+  // Natural language to CyberQL
+  rpc NaturalLanguageQuery(NLQueryRequest) returns (NLQueryResponse);
+
+  // Health
+  rpc Health(cyberglass.common.HealthRequest) returns (cyberglass.common.HealthResponse);
+}
+
+message QueryRequest {
+  string query = 1;                          // CyberQL query string
+  QueryDialect dialect = 2;                  // Which dialect
+  cyberglass.common.TimeRange time_range = 3;
+  int32 max_results = 4;
+  int32 timeout_ms = 5;
+  repeated string indexes = 6;              // Which indexes to search
+  map<string, string> parameters = 7;       // Query parameters
+}
+
+enum QueryDialect {
+  QUERY_DIALECT_CYBERQL = 0;
+  QUERY_DIALECT_SQL = 1;
+  QUERY_DIALECT_SPL = 2;
+  QUERY_DIALECT_KQL = 3;
+}
+
+message QueryResponse {
+  repeated QueryResult results = 1;
+  QueryStats stats = 2;
+  string query_id = 3;
+}
+
+message QueryResult {
+  map<string, google.protobuf.Value> fields = 1;
+  string raw = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  string source = 4;
+  string index = 5;
+  double score = 6;     // Relevance score for search queries
+}
+
+message QueryStreamResponse {
+  oneof response {
+    QueryResult result = 1;
+    QueryStats stats = 2;     // Final stats when stream completes
+    QueryProgress progress = 3;
+  }
+}
+
+message QueryProgress {
+  int64 events_scanned = 1;
+  int64 results_found = 2;
+  double percent_complete = 3;
+}
+
+message QueryStats {
+  int64 events_scanned = 1;
+  int64 results_returned = 2;
+  int64 execution_time_ms = 3;
+  int64 bytes_scanned = 4;
+  bool is_partial = 5;
+  string query_id = 6;
+}
+
+message QueryPlan {
+  string query = 1;
+  repeated PlanNode nodes = 2;
+  int64 estimated_cost = 3;
+  int64 estimated_rows = 4;
+}
+
+message PlanNode {
+  string operation = 1;
+  string description = 2;
+  int64 estimated_rows = 3;
+  repeated PlanNode children = 4;
+}
+
+message ParseQueryRequest {
+  string query = 1;
+  QueryDialect dialect = 2;
+}
+
+message ParseQueryResponse {
+  bool is_valid = 1;
+  repeated QueryError errors = 2;
+  string normalized_query = 3;     // Canonical form
+}
+
+message QueryError {
+  string message = 1;
+  int32 line = 2;
+  int32 column = 3;
+  string suggestion = 4;
+}
+
+message CancelQueryRequest {
+  string query_id = 1;
+}
+
+message CancelQueryResponse {
+  bool cancelled = 1;
+}
+
+message NLQueryRequest {
+  string natural_language = 1;
+  QueryDialect target_dialect = 2;
+  repeated string context_indexes = 3;
+}
+
+message NLQueryResponse {
+  string generated_query = 1;
+  double confidence = 2;
+  string explanation = 3;
+  repeated string alternative_queries = 4;
+}

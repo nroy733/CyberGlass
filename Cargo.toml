@@ -1,0 +1,142 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cg-core",
+    "crates/cg-proto",
+    "crates/cg-crypto",
+    "crates/cg-rbac",
+    "crates/cg-bus",
+    "crates/cg-collector",
+    "crates/cg-ingest",
+    "crates/cg-index",
+    "crates/cg-internal",
+    "crates/cg-query",
+    "crates/cg-ontology",
+    "crates/cg-detect",
+    "crates/cg-ai",
+    "crates/cg-soar",
+    "crates/cg-gateway",
+    "crates/cg-storage",
+    "crates/cg-dashboards",
+    "crates/cg-plugin-sdk",
+    "crates/cg-server",
+    "crates/cg-agent",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+authors = ["CyberGlass Engineering"]
+license = "Apache-2.0"
+rust-version = "1.75"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.45", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+async-trait = "0.1"
+
+# gRPC & Protobuf
+tonic = { version = "0.12", features = ["tls", "gzip", "zstd"] }
+tonic-build = "0.12"
+prost = "0.13"
+prost-types = "0.13"
+prost-build = "0.13"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+bytes = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Logging & Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Crypto
+ring = "0.17"
+ed25519-dalek = { version = "2", features = ["serde"] }
+rand = "0.8"
+base64 = "0.22"
+sha2 = "0.10"
+hex = "0.4"
+hmac = "0.12"
+argon2 = "0.5"
+subtle = "2"
+serde_yaml = "0.9"
+
+# JWT
+jsonwebtoken = "9"
+
+# WAL integrity
+crc32fast = "1.4"
+
+# Search & Index
+tantivy = { version = "0.22", features = ["zstd-compression"] }
+
+# Data processing
+arrow = { version = "53", features = ["prettyprint"] }
+parquet = "53"
+
+# Compression
+zstd = "0.13"
+lz4_flex = "0.11"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+
+# HTTP (for REST gateway)
+axum = { version = "0.7", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip"] }
+hyper = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# NATS
+async-nats = "0.38"
+
+# Configuration
+config = "0.14"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# WASM plugin runtime
+wasmtime = "27"
+
+# Misc
+dashmap = "6"
+parking_lot = "0.12"
+crossbeam = "0.8"
+regex = "1"
+glob = "0.3"
+tempfile = "3"
+num_cpus = "1"
+sysinfo = "0.32"
+hostname = "0.4"
+cidr = "0.3"
+ipnet = "2"
+semver = "1"
+mime = "0.3"
+image = "0.25"
+ffprobe-rust = "0.1"
+md5 = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
+debug = true

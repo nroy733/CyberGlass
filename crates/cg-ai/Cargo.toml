@@ -1,0 +1,21 @@
+[package]
+name = "cg-ai"
+description = "CyberGlass AI engine with multi-vendor support"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+
+cg-core = { path = "../cg-core" }
+async-trait = { workspace = true }
+dashmap = { workspace = true }

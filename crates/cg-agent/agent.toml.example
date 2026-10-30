@@ -1,0 +1,43 @@
+# CyberGlass Agent Configuration
+# Copy this file to /etc/cyberglass/agent.toml and customize
+
+# CyberGlass server URL
+server = "http://localhost:9401"
+
+# HEC token for Splunk-compatible ingestion (optional)
+# hec_token = "your-hec-token-here"
+
+# Default index for events
+index = "main"
+
+# HTTP request timeout in seconds
+timeout_secs = 30
+
+# Define input sources
+[[inputs]]
+# Execute a script every 60 seconds and forward stdout as events
+type = "script"
+command = "/usr/local/bin/collect_logs.sh"
+source = "linux_host"
+source_type = "json"
+index = "main"
+interval_ms = 60000
+
+[[inputs]]
+# Tail a log file for new lines
+type = "tail"
+command = "/var/log/app.log"
+source = "app_server"
+source_type = "json"
+index = "main"
+
+[[inputs]]
+# Watch a directory for new files
+type = "directory"
+command = "/var/log/import/"
+source = "file_import"
+source_type = "json"
+index = "main"
+
+# Install as systemd service
+install_service = false

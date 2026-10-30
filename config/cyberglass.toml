@@ -1,0 +1,194 @@
+# CyberGlass — Default Configuration
+# This file contains all configuration options with their defaults.
+
+[node]
+# Unique node identifier (auto-generated if empty)
+id = ""
+# Human-readable node name
+name = "cyberglass-node-1"
+# Node role: "all", "ingest", "search", "coordinator", "ai"
+role = "all"
+# Data directory
+data_dir = "/var/lib/cyberglass"
+# Log level: "trace", "debug", "info", "warn", "error"
+log_level = "info"
+# Log format: "text", "json"
+log_format = "json"
+
+[grpc]
+# gRPC listen address
+listen_addr = "0.0.0.0:9400"
+# Max message size (bytes)
+max_message_size = 67108864  # 64 MB
+# Enable TLS
+tls_enabled = true
+# TLS certificate file
+tls_cert = "/etc/cyberglass/certs/server.crt"
+# TLS key file
+tls_key = "/etc/cyberglass/certs/server.key"
+# TLS CA file (for mTLS)
+tls_ca = "/etc/cyberglass/certs/ca.crt"
+# Enable mTLS for client authentication
+mtls_enabled = false
+
+[rest]
+# REST API gateway listen address (auto-translates to gRPC)
+listen_addr = "0.0.0.0:9401"
+# Enable CORS
+cors_enabled = true
+# CORS allowed origins
+cors_origins = ["*"]
+
+[ingest]
+# Maximum events per second (0 = unlimited)
+max_eps = 0
+# Maximum queued events awaiting ingestion; worker staging is separately bounded by batch_size
+queue_capacity = 1024
+# Maximum raw event payload size in bytes
+max_event_size_bytes = 262144
+# Write-ahead log directory
+wal_dir = "/var/lib/cyberglass/wal"
+# Hard maximum WAL disk usage in bytes
+wal_max_size = 1073741824  # 1 GB
+# Batch size for internal processing
+batch_size = 256
+# Batch timeout (ms) — flush even if batch isn't full
+batch_timeout_ms = 10
+# Number of ingestion workers
+num_workers = 0  # 0 = auto (num_cpus)
+# Default index for events without explicit index
+default_index = "main"
+# Enable GeoIP enrichment
+geoip_enabled = true
+geoip_database = "/var/lib/cyberglass/data/geoip.mmdb"
+
+[index]
+# Tantivy index directory
+index_dir = "/var/lib/cyberglass/index"
+# Memory budget for indexing (bytes)
+memory_budget = 536870912  # 512 MB
+# Number of indexing threads
+num_threads = 0  # 0 = auto
+# Commit interval (seconds)
+commit_interval_seconds = 5
+# Enable columnar store for analytics
+columnar_enabled = true
+
+[storage]
+# Hot tier settings
+[storage.hot]
+path = "/var/lib/cyberglass/hot"
+max_size = "100GB"
+retention_days = 1
+
+[storage.warm]
+path = "/var/lib/cyberglass/warm"
+max_size = "500GB"
+retention_days = 30
+compression = "zstd"
+compression_level = 3
+
+[storage.cold]
+path = "/var/lib/cyberglass/cold"
+max_size = "2TB"
+retention_days = 365
+compression = "zstd"
+compression_level = 9
+
+[storage.frozen]
+enabled = false
+path = "/var/lib/cyberglass/frozen"
+max_size = "unlimited"
+retention_days = 0  # 0 = forever
+
+[ontology]
+# Enable knowledge graph entity extraction
+enabled = true
+# Entity extraction workers
+num_workers = 0  # 0 = auto
+# Auto-extract entities from events
+auto_extract = true
+# Entity types to auto-extract
+auto_extract_types = [
+    "ip_address", "domain", "url", "user", "host",
+    "file_hash", "email", "process", "certificate"
+]
+# Risk score decay rate (per day, multiplied)
+risk_decay_rate = 0.95
+# Database path
+db_path = "/var/lib/cyberglass/ontology"
+
+[detection]
+# Enable detection engine
+enabled = true
+# Rule directory (Sigma YAML + CyberGlass rules)
+rules_dir = "/etc/cyberglass/rules"
+# Evaluation interval (seconds)
+default_interval = 60
+# Enable risk-based alerting
+risk_based_alerting = true
+# MITRE ATT&CK matrix file
+mitre_attack_file = "/var/lib/cyberglass/data/mitre-attack.json"
+
+[ai]
+# Enable AI engine
+enabled = true
+
+[ai.local]
+# Local model path
+models_dir = "/var/lib/cyberglass/models"
+# Default model for general tasks
+default_model = "phi-4-mini-q4"
+# Number of GPU layers to offload (0 = CPU only)
+gpu_layers = 0
+# Context window size
+context_size = 4096
+# Number of threads for inference
+num_threads = 0  # 0 = auto
+
+[ai.remote]
+# Enable remote model federation (requires network)
+enabled = false
+# OpenRouter-compatible endpoint
+endpoint = ""
+api_key = ""
+# Default remote model
+default_model = ""
+# Timeout (ms)
+timeout_ms = 30000
+
+[ai.cgap]
+# CGAP (CyberGlass Agent Protocol) settings
+listen_addr = "0.0.0.0:9402"
+# Max concurrent tool executions
+max_concurrent = 10
+# Tool timeout (ms)
+tool_timeout_ms = 60000
+# Enable WASM sandbox for third-party tools
+wasm_sandbox = true
+# Audit log all AI actions
+audit_log = true
+
+[bus]
+# Embedded NATS JetStream settings
+listen_addr = "0.0.0.0:9403"
+# Cluster peers (for multi-node)
+cluster_peers = []
+# Store directory
+store_dir = "/var/lib/cyberglass/jetstream"
+# Max memory store size
+max_memory = "1GB"
+# Max file store size
+max_file_store = "10GB"
+
+[cluster]
+# Enable cluster mode
+enabled = false
+# Cluster discovery method: "static", "dns", "multicast"
+discovery = "static"
+# Static peer addresses
+peers = []
+# Cluster bind address
+bind_addr = "0.0.0.0:9404"
+# Cluster secret (for authentication between nodes)
+secret = ""

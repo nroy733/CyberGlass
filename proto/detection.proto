@@ -1,0 +1,211 @@
+syntax = "proto3";
+
+package cyberglass.detection;
+
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Detection service — rule management and alert generation
+service DetectionService {
+  // Manage detection rules
+  rpc CreateRule(CreateRuleRequest) returns (Rule);
+  rpc UpdateRule(UpdateRuleRequest) returns (Rule);
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse);
+  rpc GetRule(GetRuleRequest) returns (Rule);
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse);
+
+  // Import rules from external formats
+  rpc ImportSigmaRules(ImportSigmaRequest) returns (ImportSigmaResponse);
+
+  // Backtest a rule against historical data
+  rpc BacktestRule(BacktestRequest) returns (stream BacktestResponse);
+
+  // Alert management
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  rpc GetAlert(GetAlertRequest) returns (Alert);
+  rpc UpdateAlertStatus(UpdateAlertStatusRequest) returns (Alert);
+
+  // Streaming alert subscription
+  rpc SubscribeAlerts(SubscribeAlertsRequest) returns (stream Alert);
+
+  // Health
+  rpc Health(cyberglass.common.HealthRequest) returns (cyberglass.common.HealthResponse);
+}
+
+message Rule {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string query = 4;                     // CyberQL detection query
+  RuleSeverity severity = 5;
+  bool enabled = 6;
+  repeated string mitre_techniques = 7; // MITRE ATT&CK technique IDs
+  repeated string tags = 8;
+  RuleSchedule schedule = 9;
+  map<string, string> metadata = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+  string author = 13;
+  RuleType rule_type = 14;
+  repeated ThresholdCondition thresholds = 15;
+  CorrelationConfig correlation = 16;
+  double risk_score = 17;              // Risk score contribution (0.0-100.0)
+}
+
+enum RuleType {
+  RULE_TYPE_SIMPLE = 0;          // Single event match
+  RULE_TYPE_THRESHOLD = 1;       // Count-based
+  RULE_TYPE_CORRELATION = 2;     // Multi-event correlation
+  RULE_TYPE_ANOMALY = 3;         // ML-based anomaly
+  RULE_TYPE_CHAIN = 4;           // Ordered event sequence
+}
+
+enum RuleSeverity {
+  RULE_SEVERITY_INFORMATIONAL = 0;
+  RULE_SEVERITY_LOW = 1;
+  RULE_SEVERITY_MEDIUM = 2;
+  RULE_SEVERITY_HIGH = 3;
+  RULE_SEVERITY_CRITICAL = 4;
+}
+
+message RuleSchedule {
+  int32 interval_seconds = 1;    // How often to evaluate
+  int32 lookback_seconds = 2;    // How far back to look
+  int32 suppression_seconds = 3; // Suppress duplicate alerts
+}
+
+message ThresholdCondition {
+  string field = 1;
+  ThresholdOperator operator = 2;
+  int64 value = 3;
+  int32 window_seconds = 4;
+  repeated string group_by = 5;
+}
+
+enum ThresholdOperator {
+  THRESHOLD_GT = 0;
+  THRESHOLD_GTE = 1;
+  THRESHOLD_LT = 2;
+  THRESHOLD_LTE = 3;
+  THRESHOLD_EQ = 4;
+}
+
+message CorrelationConfig {
+  repeated CorrelationRule rules = 1;
+  int32 window_seconds = 2;
+  repeated string join_fields = 3;   // Fields to correlate on (e.g., src_ip)
+  CorrelationLogic logic = 4;
+}
+
+message CorrelationRule {
+  string name = 1;
+  string query = 2;
+  int32 order = 3;                   // For ordered sequences
+}
+
+enum CorrelationLogic {
+  CORRELATION_AND = 0;     // All must match
+  CORRELATION_OR = 1;      // Any must match
+  CORRELATION_SEQUENCE = 2; // Must match in order
+}
+
+message Alert {
+  string id = 1;
+  string rule_id = 2;
+  string rule_name = 3;
+  RuleSeverity severity = 4;
+  string description = 5;
+  repeated string event_ids = 6;         // Events that triggered this
+  map<string, string> fields = 7;        // Key fields from the triggering events
+  google.protobuf.Timestamp triggered_at = 8;
+  AlertStatus status = 9;
+  string assignee = 10;
+  repeated string mitre_techniques = 11;
+  double risk_score = 12;
+  repeated string entity_ids = 13;       // Related entity IDs
+  string incident_id = 14;              // If grouped into an incident
+  repeated AlertComment comments = 15;
+}
+
+enum AlertStatus {
+  ALERT_STATUS_NEW = 0;
+  ALERT_STATUS_ACKNOWLEDGED = 1;
+  ALERT_STATUS_IN_PROGRESS = 2;
+  ALERT_STATUS_RESOLVED = 3;
+  ALERT_STATUS_FALSE_POSITIVE = 4;
+  ALERT_STATUS_ESCALATED = 5;
+}
+
+message AlertComment {
+  string author = 1;
+  string text = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message CreateRuleRequest { Rule rule = 1; }
+message UpdateRuleRequest { Rule rule = 1; }
+message DeleteRuleRequest { string id = 1; }
+message DeleteRuleResponse { bool deleted = 1; }
+message GetRuleRequest { string id = 1; }
+message ListRulesRequest {
+  cyberglass.common.PaginationRequest pagination = 1;
+  bool enabled_only = 2;
+  repeated string tags = 3;
+}
+message ListRulesResponse {
+  repeated Rule rules = 1;
+  cyberglass.common.PaginationResponse pagination = 2;
+}
+
+message ImportSigmaRequest {
+  repeated string yaml_contents = 1;   // Raw YAML strings
+}
+message ImportSigmaResponse {
+  int32 imported = 1;
+  int32 failed = 2;
+  repeated string errors = 3;
+}
+
+message BacktestRequest {
+  Rule rule = 1;
+  cyberglass.common.TimeRange time_range = 2;
+  repeated string indexes = 3;
+}
+message BacktestResponse {
+  oneof response {
+    Alert alert = 1;
+    BacktestStats stats = 2;
+  }
+}
+message BacktestStats {
+  int64 events_scanned = 1;
+  int64 alerts_generated = 2;
+  int64 execution_time_ms = 3;
+}
+
+message ListAlertsRequest {
+  cyberglass.common.PaginationRequest pagination = 1;
+  cyberglass.common.TimeRange time_range = 2;
+  repeated AlertStatus statuses = 3;
+  repeated RuleSeverity severities = 4;
+  string assignee = 5;
+}
+message ListAlertsResponse {
+  repeated Alert alerts = 1;
+  cyberglass.common.PaginationResponse pagination = 2;
+}
+
+message GetAlertRequest { string id = 1; }
+message UpdateAlertStatusRequest {
+  string id = 1;
+  AlertStatus status = 2;
+  string comment = 3;
+  string assignee = 4;
+}
+
+message SubscribeAlertsRequest {
+  repeated RuleSeverity min_severity = 1;
+  repeated string rule_ids = 2;
+  repeated string tags = 3;
+}

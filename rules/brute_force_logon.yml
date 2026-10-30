@@ -1,0 +1,17 @@
+title: Windows Brute Force Logon Attempt
+id: cb716493-272e-4b71-b0db-b27b8bfbc299
+status: production
+description: Detects multiple failed authentication attempts (Windows EventID 4625) followed by logon
+author: CyberGlass Detection Engineering
+level: high
+tags:
+    - attack.credential_access
+    - attack.t1110
+logsource:
+    product: windows
+    service: security
+detection:
+    selection:
+        EventID: 4625
+        Status: "0xC000006D"
+    condition: selection

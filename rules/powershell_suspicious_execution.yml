@@ -1,0 +1,21 @@
+title: Suspicious Encoded PowerShell Execution
+id: f48b8941-8608-4e38-9cf7-4f6534e6d30b
+status: production
+description: Detects execution of PowerShell with encoded or hidden command line flags
+author: CyberGlass Detection Engineering
+level: high
+tags:
+    - attack.execution
+    - attack.t1059.001
+logsource:
+    product: windows
+    service: process_creation
+detection:
+    selection:
+        Image|endswith: '\powershell.exe'
+        CommandLine|contains:
+            - '-enc'
+            - '-EncodedCommand'
+            - '-w hidden'
+            - '-nop'
+    condition: selection
