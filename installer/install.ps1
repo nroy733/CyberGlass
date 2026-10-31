@@ -124,7 +124,6 @@ if ($configSrc) {
 $rulesCandidates = @()
 foreach ($root in $searchRoots) {
     $rulesCandidates += (Join-Path $root "rules")
-    $rulesCandidates += (Join-Path $root "dist\cyberglass-v0.1.0-windows-x86_64\rules")
 }
 $rulesSrc = $rulesCandidates | Where-Object { (Test-Path $_) -and (Get-ChildItem -Path $_ -ErrorAction SilentlyContinue) } | Select-Object -First 1
 if ($rulesSrc) {

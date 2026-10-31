@@ -3,10 +3,23 @@
 # ==============================================================================
 param(
     [string]$Target = "windows-x86_64",
-    [string]$Version = "0.1.0"
+    [string]$Version = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $workspaceManifest = Get-Content -Path "Cargo.toml" -Raw
+    $workspacePackage = [regex]::Match(
+        $workspaceManifest,
+        '(?ms)^\[workspace\.package\]\s*(.*?)(?=^\[|\z)'
+    )
+    $versionMatch = [regex]::Match($workspacePackage.Groups[1].Value, '(?m)^\s*version\s*=\s*"([^"]+)"')
+    if (-not $versionMatch.Success) {
+        throw "Could not read workspace package version from Cargo.toml."
+    }
+    $Version = $versionMatch.Groups[1].Value
+}
 
 $distDir = "dist"
 $packageName = "cyberglass-v$Version-$Target"
@@ -24,6 +37,11 @@ if (-not (Test-Path $binSrc)) {
 
 if (-not (Test-Path $binSrc)) {
     throw "Release binary was not produced at $binSrc."
+}
+
+$binaryVersion = & $binSrc --version
+if ($LASTEXITCODE -ne 0 -or $binaryVersion -ne "cyberglass-server $Version") {
+    throw "Release binary version '$binaryVersion' does not match package version '$Version'. Rebuild the release binary before packaging."
 }
 
 # Rebuild the staging tree from scratch so stale or debug artifacts cannot
