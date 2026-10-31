@@ -72,6 +72,7 @@ Copy-Item -Path "docs" -Destination (Join-Path $stagingDir "docs") -Recurse -For
 Copy-Item -Path "DEPLOYMENT.md" -Destination (Join-Path $stagingDir "DEPLOYMENT.md") -Force
 Copy-Item -Path "README.md" -Destination (Join-Path $stagingDir "README.md") -Force
 Copy-Item -Path "LICENSE" -Destination (Join-Path $stagingDir "LICENSE") -Force
+Set-Content -Path (Join-Path $stagingDir "VERSION") -Value $Version -NoNewline
 
 # Copy installers
 Copy-Item -Path "installer\install.ps1" -Destination (Join-Path $stagingDir "install.ps1") -Force

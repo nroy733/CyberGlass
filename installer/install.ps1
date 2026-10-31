@@ -75,34 +75,59 @@ $searchRoots = @(
     (Join-Path $currentDir "..")
 ) | Where-Object { $_ -and (Test-Path $_) } | ForEach-Object { (Resolve-Path $_).Path } | Select-Object -Unique
 
+# Resolve the expected release version from the package or workspace manifest.
+$expectedVersion = $null
+$versionFile = Join-Path $scriptDir "VERSION"
+if (Test-Path -LiteralPath $versionFile -PathType Leaf) {
+    $expectedVersion = (Get-Content -LiteralPath $versionFile -Raw).Trim()
+} else {
+    foreach ($root in $searchRoots) {
+        $manifestPath = Join-Path $root "Cargo.toml"
+        if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+            continue
+        }
+
+        $manifest = Get-Content -LiteralPath $manifestPath -Raw
+        $workspacePackage = [regex]::Match(
+            $manifest,
+            '(?ms)^\[workspace\.package\]\s*(.*?)(?=^\[|\z)'
+        )
+        $versionMatch = [regex]::Match(
+            $workspacePackage.Groups[1].Value,
+            '(?m)^\s*version\s*=\s*"([^"]+)"'
+        )
+        if ($versionMatch.Success) {
+            $expectedVersion = $versionMatch.Groups[1].Value
+            break
+        }
+    }
+}
+
 # 1. Binary Discovery
 $binaryCandidates = @()
 foreach ($root in $searchRoots) {
     $binaryCandidates += (Join-Path $root "bin\cyberglass-server.exe")
     $binaryCandidates += (Join-Path $root "cyberglass-server.exe")
     $binaryCandidates += (Join-Path $root "target\release\cyberglass-server.exe")
-    $binaryCandidates += (Join-Path $root "target\debug\cyberglass-server.exe")
 }
 
 $binarySrc = $binaryCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 if (-not $binarySrc) {
-    Write-Host "[*] Searching directory trees for cyberglass-server.exe..." -ForegroundColor Yellow
-    foreach ($root in $searchRoots) {
-        $found = Get-ChildItem -Path $root -Filter "cyberglass-server.exe" -Recurse -Depth 4 -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) {
-            $binarySrc = $found.FullName
-            break
-        }
-    }
-}
-
-if (-not $binarySrc) {
-    Write-Error "Could not find cyberglass-server.exe in any package location: $($searchRoots -join ', ')"
+    Write-Error "Could not find a packaged or release cyberglass-server.exe. Build with 'cargo build --release --bin cyberglass-server' or use the release bundle."
     exit 1
 }
 
+$binaryVersion = & $binarySrc --version
+if ($LASTEXITCODE -ne 0) {
+    throw "Could not read the server version from '$binarySrc'."
+}
+if ($expectedVersion -and $binaryVersion -ne "cyberglass-server $expectedVersion") {
+    throw "Refusing to install '$binaryVersion'; expected workspace/package version $expectedVersion."
+}
+
 Write-Host "[+] Found server binary: $binarySrc" -ForegroundColor Green
+Write-Host "[+] Verified server version: $binaryVersion" -ForegroundColor Green
 Copy-Item -Path $binarySrc -Destination (Join-Path $Prefix "bin\cyberglass-server.exe") -Force
 
 # 2. Configuration Discovery
